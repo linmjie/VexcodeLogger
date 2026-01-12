@@ -23,7 +23,7 @@ int main() {
 
     auto LOGGER = Logger::create(&Brain.Screen)
         .setMaxLineSize(250)
-        .logToStdOut(true)
+        .printToStdout()
         .build();
 
     for (int i = 0; i < 10; i++) {

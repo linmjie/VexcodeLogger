@@ -4,15 +4,25 @@
 #include <fstream>
 #include <stack>
 
+//Sometimes intellisense is finicky
+#include <stdarg.h>
+
 using namespace vex;
 
-//There may be variadic function stuff from c++11
-//I don't trust that this compiler supports it, so we're doing it the c way
-void Logger::addToBuffer(bool makeNewLine, const char* format, va_list arg) {
+
+void Logger::addToBuffer(bool makeNewLine, const char* format, va_list args) {
     uint32_t lineSize = this->maxLineSize;
     char buf[lineSize];
-    vsnprintf(buf, lineSize, format, arg);
 
+    va_list argsCopy;
+    va_copy(argsCopy, args);
+    //vsnprintf just takes the output of printf(format, argsCopy), or the formatted string of what we want to log,
+    //and puts it into buf as long as long as it doesn't exceed the byte limit of the second arg, lineSize
+    vsnprintf(buf, lineSize, format, argsCopy);
+
+    //Maybe we could concatenate all the outputLines that would theoretically be on the same line?
+    //Continuing from this idea, theoretically once this function concludes all outputLines on the buffer would be on separate lines
+    //Also, we could make word wrapping, where we separate lengthy lines into multiple outputLines
     this->buffer.push_back(outputLine {
         std::string(buf), makeNewLine
     });
@@ -38,18 +48,20 @@ void Logger::addToBuffer(bool makeNewLine, const char* format, va_list arg) {
     }
 }
 
-void Logger::print(const char *format, ...) { 
-    va_list arg;
-    this->addToBuffer(false, format, arg);
+void Logger::print(const char* format, ...) { 
+    va_list args;
+    va_start(args, format);
+    this->addToBuffer(false, format, args);
     this->printBuffer();
-    va_end(arg);
+    va_end(args);
 }
 
-void Logger::println(const char *format, ...) {
-    va_list arg;
-    this->addToBuffer(true, format, arg);
+void Logger::println(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    this->addToBuffer(true, format, args);
     this->printBuffer();
-    va_end(arg);
+    va_end(args);
 }
 
 void Logger::printBuffer() { 
@@ -58,8 +70,15 @@ void Logger::printBuffer() {
     bool currentlyOnNewLine = true;
 
     std::stack<outputLine> toPrint;
-    //insert stuff into toPrint
+    /* this->buffer contains ALL outputs, toPrint is designed to contain only the ones that can fit on the screen.
+     * Why toPrint is a stack is because we will can identify lines starting from end of this->buffer vector,
+     * check if adding the line would exceed the maximum height of our screen, 
+     * then push it onto our stack if it doesn't, ending the process of adding to toPrint if it does exceed.
+     * The last thing we push onto the stack is the furthest our buffer goes back in history, aka where we start printing
+    */
 
+    //Maybe remove the new line checks 
+    //(with the maybe implementation so outputLines are always onNewLine after addToBuffer adds them to the buffer)
     while (!toPrint.empty()) {
         outputLine line = toPrint.top();
         const char* string = line.contents.c_str();
@@ -87,8 +106,8 @@ Logger::Builder& Logger::Builder::setMaxLineSize(uint32_t bytes) {
     return *this;
 }
 
-Logger::Builder& Logger::Builder::logToStdOut(bool logToStdOut) {
-    this->logExternally = logToStdOut;
+Logger::Builder& Logger::Builder::printToStdout() {
+    this->logExternally = true;
     return *this;
 }
 

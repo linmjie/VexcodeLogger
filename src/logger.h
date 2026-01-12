@@ -15,9 +15,11 @@ struct outputLine {
     bool onNewLine;
 };
 
+//Templates are miserable, so variadic functions(variable parameter count) are implemented with va_list from c
+
 class Logger {
-    static const int WIDTH = 480;
-    static const int HEIGHT = 240;
+    static const int SCREEN_WIDTH = 480;
+    static const int SCREEN_HEIGHT = 240;
     std::vector<outputLine> buffer;
 
     //Properties
@@ -27,14 +29,14 @@ class Logger {
     std::string logFile;
 
     void printBuffer();
-    void addToBuffer(bool makeNewLine, const char* format, std::va_list args);
+    void addToBuffer(bool makeNewLine, const char* format, va_list args);
 
     public:
         //Prefer construction via builder
         Logger(brain::lcd* screen, uint32_t maxLineSize,
             bool logExternally, std::string logFile);
 
-        //Function declarations copied from vex_brain.h
+        //Function declarations COPIED from vex_brain.h
         //FUNCTION DEC. COPY START
 
         /** 
@@ -83,7 +85,7 @@ class Logger {
           if( std::is_same< T, double >::value )
             println( "%.2f", (double)value );
           else {
-            // primarily to handle modkit number
+            // primarily to handle modkit number (what's a modkit number??)
             if( (int)value == value )
               println( "%d", (int)value );
             else
@@ -116,7 +118,10 @@ class Logger {
                  */
                 Builder& setMaxLineSize(uint32_t bytes);
 
-                Builder& logToStdOut(bool);
+                /**
+                 * @brief Enables printing to computer's standard output
+                 */
+                Builder& printToStdout();
 
                 /**
                  * @brief Any output from the logger can also be logged into a file.
