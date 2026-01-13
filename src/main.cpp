@@ -19,17 +19,18 @@ brain Brain;
 
 int main() {
 
-    Brain.Screen.printAt( 10, 50, "Hello V5" );
-
     auto LOGGER = Logger::create(&Brain.Screen)
-        .setMaxLineSize(250)
-        .printToStdout()
+        .setMaxLineSize(100)
         .build();
-
-    for (int i = 0; i < 10; i++) {
-        LOGGER.println("%d^2 = %d", i, i*i);
+    
+    for (int i = 0; i < 100; i++)
+    {
+        LOGGER.println("%d^2: %d", i, i*i);
+        LOGGER.print(" [NOT ON NEW LINE]");
+        this_thread::sleep_for(100);
     }
-   
+    
+
     while(1) {
         
         // Allow other tasks to run

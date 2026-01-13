@@ -11,6 +11,7 @@ using namespace vex;
 
 
 void Logger::addToBuffer(bool makeNewLine, const char* format, va_list args) {
+    std::cout << "add to buffer";
     uint32_t lineSize = this->maxLineSize;
     char buf[lineSize];
 
@@ -52,11 +53,14 @@ void Logger::print(const char* format, ...) {
     va_list args;
     va_start(args, format);
     this->addToBuffer(false, format, args);
+    //this->screen->print(this->buffer[0].contents.c_str());
     this->printBuffer();
     va_end(args);
 }
 
 void Logger::println(const char* format, ...) {
+    this->screen->clearScreen();
+    this->screen->print("entered println");
     va_list args;
     va_start(args, format);
     this->addToBuffer(true, format, args);
@@ -67,6 +71,8 @@ void Logger::println(const char* format, ...) {
 void Logger::printBuffer() { 
     //Initial state
     this->screen->clearScreen();
+    //Ensures cursor is reset
+    this->screen->setCursor(1, 1);
     bool currentlyOnNewLine = true;
 
     std::stack<outputLine> toPrint;
@@ -79,8 +85,17 @@ void Logger::printBuffer() {
     int heightLeft = SCREEN_HEIGHT;
     int size = this->buffer.size();
     for (int i = 0; i < size; i++) {
-        int index = size - i;
-        //get size of string thing
+        int index = size - i - 1;
+        if (index < 0 || index >= size) {
+            return;
+        }
+        outputLine lineContainer = this->buffer.at(index);
+        const char* contents = lineContainer.contents.c_str();
+        int height = this->screen->getStringHeight(contents);
+        if (height < heightLeft) {
+            toPrint.push(lineContainer);
+            heightLeft -= height;
+        }
     }
 
     //Maybe remove the new line checks 
@@ -94,9 +109,7 @@ void Logger::printBuffer() {
             currentlyOnNewLine = true;
         }
         this->screen->print(string);
-        if (!onNewLine) {
-            currentlyOnNewLine = false;
-        }
+        currentlyOnNewLine = false;
         toPrint.pop();
     }
 }
