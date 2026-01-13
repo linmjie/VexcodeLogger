@@ -76,6 +76,12 @@ void Logger::printBuffer() {
      * then push it onto our stack if it doesn't, ending the process of adding to toPrint if it does exceed.
      * The last thing we push onto the stack is the furthest our buffer goes back in history, aka where we start printing
     */
+    int heightLeft = SCREEN_HEIGHT;
+    int size = this->buffer.size();
+    for (int i = 0; i < size; i++) {
+        int index = size - i;
+        //get size of string thing
+    }
 
     //Maybe remove the new line checks 
     //(with the maybe implementation so outputLines are always onNewLine after addToBuffer adds them to the buffer)
