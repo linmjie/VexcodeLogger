@@ -20,11 +20,10 @@ brain Brain;
 int main() {
 
     auto LOGGER = Logger::create(&Brain.Screen)
-        .setMaxLineSize(100)
+        .disableWordWrap()
         .build();
     
-    for (int i = 0; i < 100; i++)
-    {
+    for (int i = 0; i < 100; i++) {
         LOGGER.println("%d^2: %d", i, i*i);
         LOGGER.print(" [NOT ON NEW LINE]");
         this_thread::sleep_for(100);

@@ -4,40 +4,54 @@
 #include <vector>
 #include <string>
 #include <cstdarg>
+#include <stack>
+#include <cassert>
 
 using namespace vex;
-
-/**
- * @brief Container for a string to print and whether to print it on it's own line
- */
-struct outputLine {
-    std::string contents;
-    bool onNewLine;
-};
 
 //Templates are miserable, so variadic functions(variable parameter count) are implemented with va_list from c
 
 class Logger {
-    static const int SCREEN_WIDTH = 480;
-    static const int SCREEN_HEIGHT = 240;
-    std::vector<outputLine> buffer;
+    public:
+        static const int SCREEN_WIDTH = 480;
+        static const int SCREEN_HEIGHT = 240;
+    private:
+        std::vector<std::string> buffer;
 
-    //Properties
-    brain::lcd* screen;
-    uint32_t maxLineSize;
-    bool logExternally;
-    std::string logFile;
+        //Properties
+        brain::lcd* screen;
+        uint32_t maxLineSize;
+        bool doWordWrap;
+        bool logExternally;
+        std::string logFile;
 
-    void printBuffer();
-    void addToBuffer(bool makeNewLine, const char* format, va_list args);
 
     public:
         //Prefer construction via builder
         Logger(brain::lcd* screen, uint32_t maxLineSize,
             bool logExternally, std::string logFile);
 
-        //Function declarations COPIED from vex_brain.h
-        //FUNCTION DEC. COPY START
+        //Some function declarations COPIED from vex_brain.h
+
+        /** 
+         * @brief Prints a number, string, or Boolean with a new line.
+         * Provides formatting from printf
+         * @param format This is a reference to a char format that prints the value of variables
+         * @param ... A variable list of parameters to insert into format string
+         * @note Some characters like \t and \\n don't work as they would normally
+        */          
+        void println(const char *format, ... );
+
+        /** 
+         * @brief Prints a number, string, or Boolean.
+         * Provides formatting from printf
+         * @param format This is a reference to a char format that prints the value of variables
+         * @param ... A variable list of parameters to insert into format string
+         * @note Some characters like \t and \\n don't work as they would normally
+        */          
+        void print(const char *format, ... );
+
+        //These are just redefinitions stolen from vex_brain.h for simpler printing
 
         /** 
          * @brief Prints a number, string, or Boolean.
@@ -64,16 +78,6 @@ class Logger {
         /** 
          * @brief Prints a number, string, or Boolean.
          * Provides formatting from printf
-         * @param format This is a reference to a char format that prints the value of variables
-         * @param ... A variable list of parameters to insert into format string
-         * @note Some characters like \t and \\n don't work as they would normally
-        */          
-        void     print( const char *format, ... );
-        //FUNCTION DEC. COPY END
-
-        /** 
-         * @brief Prints a number, string, or Boolean.
-         * Provides formatting from printf
          * @param value Information to display on the screen
          * @note Some characters like \t and \\n don't work as they would normally
         */  
@@ -93,20 +97,16 @@ class Logger {
           }
         }
 
-        /** 
-         * @brief Prints a number, string, or Boolean with a new line.
-         * Provides formatting from printf
-         * @param format This is a reference to a char format that prints the value of variables
-         * @param ... A variable list of parameters to insert into format string
-         * @note Some characters like \t and \\n don't work as they would normally
-        */          
-        void println( const char *format, ... );
+    private: 
+        void _printBuffer();
+        void _addToBuffer(bool makeNewLine, const char* format, va_list args);
+        std::stack<std::string> _fillPrintStack();
 
         //CONSTRUCTION
-    private: 
         class Builder {
             brain::lcd* screen;
             uint32_t maxLineSize = 200;
+            bool doWordWrap = true;
             bool logExternally = false;
             std::string logFile = "";
 
@@ -119,15 +119,21 @@ class Logger {
                 Builder& setMaxLineSize(uint32_t bytes);
 
                 /**
+                 * @brief By default the logger wraps words onto a new line this method disables that
+                 */
+                Builder& disableWordWrap();
+
+                /**
                  * @brief Enables printing to computer's standard output
                  */
                 Builder& printToStdout();
 
                 /**
-                 * @brief Any output from the logger can also be logged into a file.
+                 * @brief Any output from the logger can also be logged into a file
                  * @param fileName The file path as a string.
                  */
                 Builder& logToFile(std::string fileName);
+
 
                 /**
                  * @brief Finishes the building process

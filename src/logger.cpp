@@ -2,7 +2,6 @@
 #include <cstdio>
 #include <iostream>
 #include <fstream>
-#include <stack>
 
 //Sometimes intellisense is finicky
 #include <stdarg.h>
@@ -10,8 +9,7 @@
 using namespace vex;
 
 
-void Logger::addToBuffer(bool makeNewLine, const char* format, va_list args) {
-    std::cout << "add to buffer";
+void Logger::_addToBuffer(bool makeNewLine, const char* format, va_list args) {
     uint32_t lineSize = this->maxLineSize;
     char buf[lineSize];
 
@@ -21,12 +19,11 @@ void Logger::addToBuffer(bool makeNewLine, const char* format, va_list args) {
     //and puts it into buf as long as long as it doesn't exceed the byte limit of the second arg, lineSize
     vsnprintf(buf, lineSize, format, argsCopy);
 
-    //Maybe we could concatenate all the outputLines that would theoretically be on the same line?
-    //Continuing from this idea, theoretically once this function concludes all outputLines on the buffer would be on separate lines
-    //Also, we could make word wrapping, where we separate lengthy lines into multiple outputLines
-    this->buffer.push_back(outputLine {
-        std::string(buf), makeNewLine
-    });
+    if (makeNewLine) {
+        this->buffer.push_back(std::string(buf));
+    } else {
+        this->buffer.back().append(buf);
+    }
 
     if (this->logExternally) {
         std::cout << buf;
@@ -40,10 +37,11 @@ void Logger::addToBuffer(bool makeNewLine, const char* format, va_list args) {
         outputFile.open(this->logFile);
         if (!outputFile.is_open()) {
             std::cerr << "[ERROR] Unable to open file: " << this->logFile << std::endl;
-        }
-        outputFile << buf;
-        if (makeNewLine) {
-            outputFile << std::endl;
+        } else {
+            outputFile << buf;
+            if (makeNewLine) {
+                outputFile << std::endl;
+            }
         }
         outputFile.close();
     }
@@ -52,66 +50,95 @@ void Logger::addToBuffer(bool makeNewLine, const char* format, va_list args) {
 void Logger::print(const char* format, ...) { 
     va_list args;
     va_start(args, format);
-    this->addToBuffer(false, format, args);
-    //this->screen->print(this->buffer[0].contents.c_str());
-    this->printBuffer();
+    this->_addToBuffer(false, format, args);
+    this->_printBuffer();
     va_end(args);
 }
 
 void Logger::println(const char* format, ...) {
     this->screen->clearScreen();
-    this->screen->print("entered println");
     va_list args;
     va_start(args, format);
-    this->addToBuffer(true, format, args);
-    this->printBuffer();
+    this->_addToBuffer(true, format, args);
+    this->_printBuffer();
     va_end(args);
 }
 
-void Logger::printBuffer() { 
+void Logger::_printBuffer() { 
     //Initial state
     this->screen->clearScreen();
     //Ensures cursor is reset
     this->screen->setCursor(1, 1);
-    bool currentlyOnNewLine = true;
 
-    std::stack<outputLine> toPrint;
     /* this->buffer contains ALL outputs, toPrint is designed to contain only the ones that can fit on the screen.
      * Why toPrint is a stack is because we will can identify lines starting from end of this->buffer vector,
      * check if adding the line would exceed the maximum height of our screen, 
      * then push it onto our stack if it doesn't, ending the process of adding to toPrint if it does exceed.
      * The last thing we push onto the stack is the furthest our buffer goes back in history, aka where we start printing
     */
+    std::stack<std::string> toPrint = this->_fillPrintStack();
+
+    while (!toPrint.empty()) {
+        const char* contents = toPrint.top().c_str();
+        this->screen->print(contents);
+        this->screen->newLine();
+        toPrint.pop();
+    }
+}
+
+//MAKE IT REPEAT FOR MULTIPLE SUBSTRINGS
+std::stack<std::string> Logger::_fillPrintStack() {
+    std::stack<std::string> printStack;
     int heightLeft = SCREEN_HEIGHT;
     int size = this->buffer.size();
     for (int i = 0; i < size; i++) {
         int index = size - i - 1;
-        if (index < 0 || index >= size) {
-            return;
-        }
-        outputLine lineContainer = this->buffer.at(index);
-        const char* contents = lineContainer.contents.c_str();
-        int height = this->screen->getStringHeight(contents);
-        if (height < heightLeft) {
-            toPrint.push(lineContainer);
-            heightLeft -= height;
+        assert(i >= 0 && i < this->buffer.size());
+        std::string lineContainer = this->buffer.at(index);
+        const char* contents = lineContainer.c_str();
+        int width = this->screen->getStringWidth(contents);
+        if (!this->doWordWrap || width <= SCREEN_WIDTH) {
+            int height = this->screen->getStringHeight(contents);
+            if (height < heightLeft) {
+                printStack.push(lineContainer);
+                heightLeft -= height;
+            } else {
+                break; //end early, no need to go back through rest of buffer
+            }
+        } else {
+            std::vector<std::string> splitStrings;
+            int strLen = lineContainer.length();
+            int avgCharSize = width / strLen;
+            //Guess split
+            int guessStrLen = SCREEN_WIDTH / avgCharSize;
+            int frontPointer = 0;
+            int backPointer = frontPointer + guessStrLen;
+            std::string sub = lineContainer.substr(frontPointer, guessStrLen);
+            //Fine tune
+            while (true) {
+                if (backPointer >= strLen) {
+                    break;
+                }
+                int subStrWidth = this->screen->getStringWidth(sub.c_str());
+                if (subStrWidth > SCREEN_WIDTH) {
+                    sub.pop_back();
+                    backPointer--;
+                } else if (subStrWidth < SCREEN_WIDTH) {
+                    int nextCharWidth = this->screen->getStringWidth(lineContainer.substr(backPointer, 1).c_str());
+                    if (subStrWidth + nextCharWidth <= SCREEN_WIDTH) {
+                        backPointer++;
+                        sub.push_back(lineContainer.at(backPointer));
+                    } else {
+                        break;
+                    }
+                } else { //subStrWidth == SCREEN_WIDTH
+                    break;
+                }
+            }
+            printStack.push(sub);
         }
     }
-
-    //Maybe remove the new line checks 
-    //(with the maybe implementation so outputLines are always onNewLine after addToBuffer adds them to the buffer)
-    while (!toPrint.empty()) {
-        outputLine line = toPrint.top();
-        const char* string = line.contents.c_str();
-        bool onNewLine = line.onNewLine;
-        if (onNewLine && !currentlyOnNewLine) {
-            this->screen->newLine();
-            currentlyOnNewLine = true;
-        }
-        this->screen->print(string);
-        currentlyOnNewLine = false;
-        toPrint.pop();
-    }
+    return printStack;
 }
 
 //CONSTRUCTION
@@ -122,6 +149,11 @@ Logger Logger::Builder::build() {
 
 Logger::Builder& Logger::Builder::setMaxLineSize(uint32_t bytes) {
     this->maxLineSize = bytes;
+    return *this;
+}
+
+Logger::Builder& Logger::Builder::disableWordWrap() {
+    this->doWordWrap = false;
     return *this;
 }
 
