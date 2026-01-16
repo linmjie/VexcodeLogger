@@ -8,6 +8,10 @@
 
 using namespace vex;
 
+void Logger::clearScreen() {
+    this->screen->clearScreen();
+    this->screen->setCursor(0, 0);
+}
 
 void Logger::_addToBuffer(bool makeNewLine, const char* format, va_list args) {
     uint32_t lineSize = this->maxLineSize;
@@ -86,7 +90,6 @@ void Logger::_printBuffer() {
     }
 }
 
-//MAKE IT REPEAT FOR MULTIPLE SUBSTRINGS
 std::stack<std::string> Logger::_fillPrintStack() {
     std::stack<std::string> printStack;
     int heightLeft = SCREEN_HEIGHT;
@@ -113,29 +116,36 @@ std::stack<std::string> Logger::_fillPrintStack() {
             int guessStrLen = SCREEN_WIDTH / avgCharSize;
             int frontPointer = 0;
             int backPointer = frontPointer + guessStrLen;
-            std::string sub = lineContainer.substr(frontPointer, guessStrLen);
-            //Fine tune
-            while (true) {
-                if (backPointer >= strLen) {
-                    break;
-                }
-                int subStrWidth = this->screen->getStringWidth(sub.c_str());
-                if (subStrWidth > SCREEN_WIDTH) {
-                    sub.pop_back();
-                    backPointer--;
-                } else if (subStrWidth < SCREEN_WIDTH) {
-                    int nextCharWidth = this->screen->getStringWidth(lineContainer.substr(backPointer, 1).c_str());
-                    if (subStrWidth + nextCharWidth <= SCREEN_WIDTH) {
-                        backPointer++;
-                        sub.push_back(lineContainer.at(backPointer));
-                    } else {
+            do {
+                std::string sub = lineContainer.substr(frontPointer, guessStrLen);
+                //Fine tune
+                while (backPointer < strLen) {
+                    int subStrWidth = this->screen->getStringWidth(sub.c_str());
+                    if (subStrWidth > SCREEN_WIDTH) {
+                        sub.pop_back();
+                        backPointer--;
+                    } else if (subStrWidth < SCREEN_WIDTH) {
+                        int nextCharWidth = this->screen->getStringWidth(
+                                lineContainer.substr(backPointer, 1).c_str());
+                        if (subStrWidth + nextCharWidth <= SCREEN_WIDTH) {
+                            backPointer++;
+                            sub.push_back(lineContainer.at(backPointer));
+                        } else {
+                            break;
+                        }
+                    } else { //subStrWidth == SCREEN_WIDTH
                         break;
                     }
-                } else { //subStrWidth == SCREEN_WIDTH
-                    break;
                 }
-            }
-            printStack.push(sub);
+                int height = this->screen->getStringHeight(sub.c_str());
+                if (height < heightLeft) {
+                    printStack.push(sub);
+                    heightLeft -= height;
+                } else {
+                    break; //end early, no need to go back through rest of buffer
+                }
+                frontPointer = backPointer + 1;
+            } while (backPointer <= strLen);
         }
     }
     return printStack;

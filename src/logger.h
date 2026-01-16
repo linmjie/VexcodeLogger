@@ -31,6 +31,8 @@ class Logger {
         Logger(brain::lcd* screen, uint32_t maxLineSize,
             bool logExternally, std::string logFile);
 
+        void clearScreen();
+
         //Some function declarations COPIED from vex_brain.h
 
         /** 
