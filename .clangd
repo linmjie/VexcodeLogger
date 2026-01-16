@@ -1,4 +1,0 @@
-CompileFlags:
-  Add:
-    - -I../include
-    - -I/Users/deolin/Library/Application Support/Code/User/globalStorage/vexrobotics.vexcode/sdk/cpp/V5/V5_20240802_15_00_00/vexv5/include
