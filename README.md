@@ -15,7 +15,7 @@
 #include "logger.h"
 
 auto LOGGER = Logger::create(&Brain.Screen)
-    .disableWordWrap()
+    .disableWordWrap() //Disables word wrapping
     .build();
 ```
  - If you run C++20 which introduces compatability between default member values and designated initializers, you can use a different builder
@@ -23,9 +23,10 @@ auto LOGGER = Logger::create(&Brain.Screen)
 ```c++
 #include "logger.h"
 
+//Uses custom configurations
 Logger LOGGER{&Brain.Screen, {
-    .doWordWrap = false,
-    .logFile = "mylog.csv"
+    .doWordWrap = false,     //Disables word wrapping
+    .logFile = "mylog.csv"   //Logs everything printed into mylog.csv
 }};
 
 //Uses all default configurations
@@ -45,7 +46,7 @@ int main() {
   Logger LOGGER{&Brain.Screen};
   //Table for exponents
   for (int i = 0; i < 50; i++) {
-    LOGGER.clearScreen():
+    LOGGER.clearScreen();
     LOGGER.println("%d^2: %d, ", i * i);
     LOGGER.print("%d^3: %d", i * i * i);
   }
