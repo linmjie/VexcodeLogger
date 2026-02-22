@@ -13,14 +13,13 @@ using namespace vex;
 
 class Logger {
     public:
-        static const int SCREEN_WIDTH = 480;
-        static const int SCREEN_HEIGHT = 240;
+        static constexpr int SCREEN_WIDTH = 480;
+        static constexpr int SCREEN_HEIGHT = 240;
     private:
         std::vector<std::string> buffer;
 
         //Properties
         brain::lcd* screen;
-        uint32_t maxLineSize;
         bool doWordWrap;
         bool logExternally;
         std::string logFile;
@@ -28,7 +27,7 @@ class Logger {
 
     public:
         //Prefer construction via builder
-        Logger(brain::lcd* screen, uint32_t maxLineSize,
+        Logger(brain::lcd* screen, bool doWordWrap,
             bool logExternally, std::string logFile);
 
         void clearScreen();
@@ -107,18 +106,12 @@ class Logger {
         //CONSTRUCTION
         class Builder {
             brain::lcd* screen;
-            uint32_t maxLineSize = 200;
             bool doWordWrap = true;
             bool logExternally = false;
             std::string logFile = "";
 
             public:
                 Builder(brain::lcd *screen);
-
-                /**
-                 * @brief Any string printed will be cut off at this character limit
-                 */
-                Builder& setMaxLineSize(uint32_t bytes);
 
                 /**
                  * @brief By default the logger wraps words onto a new line this method disables that
