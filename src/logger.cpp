@@ -195,6 +195,15 @@ Logger::Logger(brain::lcd* screen, bool doWordWrap, bool logExternally, std::str
     : screen(screen), doWordWrap(doWordWrap), logExternally(logExternally), logFile(logFile)
 {}
 
+Logger::Logger(brain::lcd *screen, DesignatedBuilder config)
+    : screen(screen), doWordWrap(config.doWordWrap), logExternally(config.logExternally), logFile(config.logFile)
+{}
+
+Logger::Logger(brain::lcd *screen)
+    : screen(screen)
+{}
+
+
 Logger::Builder::Builder(brain::lcd* screen) {
     this->screen = screen;
 }
