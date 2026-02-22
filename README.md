@@ -14,7 +14,7 @@
 ```c++
 #include "logger.h"
 
-auto LOGGER = Logger:create(&Brain.Screen)
+auto LOGGER = Logger::create(&Brain.Screen)
     .disableWordWrap()
     .build();
 ```
