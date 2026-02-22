@@ -9,18 +9,27 @@
 <!-- TOC -->
 ## Usage
  - You need to create an instance of a logger to print
- - You can tack on methods like setMaxLineSize to customize the logger
+ - You can tack on methods like disableWordWrap to customize the logger
  - To finish the creation process, you need to call .build()
 ```c++
 #include "logger.h"
 
-int main() {
-  auto LOGGER = Logger:create(&Brain.Screen)
-    .setMaxLineSize(200)
+auto LOGGER = Logger:create(&Brain.Screen)
     .disableWordWrap()
     .build();
-  return 0;
-}
+```
+ - If you run C++20 which introduces compatability between default member values and designated initializers, you can use a different builder
+ - You do not to call .build() with these
+```c++
+#include "logger.h"
+
+Logger LOGGER{&Brain.Screen, {
+    .doWordWrap = false,
+    .logFile = "mylog.csv"
+}};
+
+//Uses all default configurations
+Logger default{&Brain.Screen};
 ```
 
 ### There's three methods you can use:
@@ -33,7 +42,7 @@ int main() {
 #include "logger.h"
 
 int main() {
-  auto LOGGER = Logger::create(&Brain.Screen).build();
+  Logger LOGGER{&Brain.Screen};
   //Table for exponents
   for (int i = 0; i < 50; i++) {
     LOGGER.clearScreen():
