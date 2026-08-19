@@ -38,6 +38,8 @@ public:
     Logger(brain::lcd* screen, DesignatedBuilder configs);
     Logger(brain::lcd* screen);
 
+    static Logger basic(brain& brain);
+
     void clearScreen();
 
     //Some function declarations COPIED from vex_brain.h

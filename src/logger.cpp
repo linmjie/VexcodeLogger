@@ -8,6 +8,10 @@
 
 using namespace vex;
 
+Logger Logger::basic(brain& brain) {
+    return Logger::Builder(&brain.Screen).build();
+}
+
 void Logger::clearScreen() {
     this->screen->clearScreen();
     this->screen->setCursor(0, 0);
